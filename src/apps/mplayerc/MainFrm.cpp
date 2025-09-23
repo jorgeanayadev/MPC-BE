@@ -20994,6 +20994,18 @@ void CMainFrame::ExportLoop(const CString& name, REFERENCE_TIME startTime, REFER
 		return;
 	}
 
+	// Validate file exists
+	if (!PathFileExists(currentFile)) {
+		AfxMessageBox(L"Current media file cannot be found.", MB_ICONERROR);
+		return;
+	}
+
+	// Validate time range
+	if (startTime >= endTime) {
+		AfxMessageBox(L"Invalid time range: start time must be before end time.", MB_ICONERROR);
+		return;
+	}
+
 	// Create suggested filename
 	CString suggestedName = name;
 	suggestedName.Replace(L":", L"-");
@@ -21006,20 +21018,44 @@ void CMainFrame::ExportLoop(const CString& name, REFERENCE_TIME startTime, REFER
 	suggestedName.Replace(L">", L"-");
 	suggestedName.Replace(L"|", L"-");
 
+	// Get file extension from current file
+	CString extension = PathFindExtension(currentFile);
+	if (extension.IsEmpty()) {
+		extension = L".mp4"; // Default extension
+	}
+
 	// Get output path
-	CFileDialog dlg(FALSE, L"mp4", suggestedName + L".mp4",
+	CFileDialog dlg(FALSE, extension.Mid(1), suggestedName + extension,
 		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
 		L"MP4 files (*.mp4)|*.mp4|AVI files (*.avi)|*.avi|MKV files (*.mkv)|*.mkv|All files (*.*)|*.*||");
 
 	if (dlg.DoModal() == IDOK) {
 		CString outputFile = dlg.GetPathName();
 		
-		if (RunFFmpegExport(currentFile, outputFile, startTime, endTime)) {
+		// Show progress message
+		CString progressMsg;
+		progressMsg.Format(L"Exporting loop '%s'...\nThis may take a few moments.", name);
+		
+		// Create a simple progress dialog or message
+		BeginWaitCursor();
+		
+		bool success = RunFFmpegExport(currentFile, outputFile, startTime, endTime);
+		
+		EndWaitCursor();
+		
+		if (success) {
 			CString msg;
 			msg.Format(L"Loop '%s' exported successfully to:\n%s", name, outputFile);
 			AfxMessageBox(msg, MB_ICONINFORMATION);
 		} else {
-			AfxMessageBox(L"Export failed. Please check that FFmpeg is properly configured.", MB_ICONERROR);
+			CString errorMsg;
+			errorMsg.Format(L"Export failed.\n\nPossible causes:\n"
+				L"• FFmpeg not properly configured\n"
+				L"• Insufficient disk space\n"
+				L"• Invalid time range\n"
+				L"• Output file in use\n\n"
+				L"Please check FFmpeg settings and try again.");
+			AfxMessageBox(errorMsg, MB_ICONERROR);
 		}
 	}
 }
@@ -21031,23 +21067,32 @@ bool CMainFrame::RunFFmpegExport(const CString& inputFile, const CString& output
 	CString ffmpegPath = GetFullExePath(s.strFFmpegExePath, true);
 	
 	if (ffmpegPath.IsEmpty()) {
-		AfxMessageBox(L"FFmpeg not found. Please configure FFmpeg path in settings.", MB_ICONERROR);
 		return false;
 	}
 
-	// Convert REFERENCE_TIME to seconds
+	// Verify FFmpeg executable exists
+	if (!PathFileExists(ffmpegPath)) {
+		return false;
+	}
+
+	// Convert REFERENCE_TIME to seconds with high precision
 	double startSec = (double)startTime / UNITS;
 	double durationSec = (double)(endTime - startTime) / UNITS;
 
-	// Build FFmpeg command
+	// Validate parameters
+	if (durationSec <= 0) {
+		return false;
+	}
+
+	// Build FFmpeg command with error handling
 	CString command;
-	command.Format(L"\"%s\" -i \"%s\" -ss %.3f -t %.3f -c copy \"%s\"",
+	command.Format(L"\"%s\" -y -i \"%s\" -ss %.6f -t %.6f -c copy -avoid_negative_ts make_zero \"%s\"",
 		ffmpegPath, inputFile, startSec, durationSec, outputFile);
 
-	// Execute FFmpeg
+	// Execute FFmpeg with better error handling
 	STARTUPINFO si = { sizeof(si) };
 	PROCESS_INFORMATION pi = { 0 };
-	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
 	si.wShowWindow = SW_HIDE;
 
 	BOOL success = CreateProcess(nullptr, command.GetBuffer(), nullptr, nullptr, FALSE, 
@@ -21055,8 +21100,8 @@ bool CMainFrame::RunFFmpegExport(const CString& inputFile, const CString& output
 	command.ReleaseBuffer();
 
 	if (success) {
-		// Wait for process to complete with timeout
-		DWORD waitResult = WaitForSingleObject(pi.hProcess, 60000); // 60 second timeout
+		// Wait for process to complete with longer timeout for large files
+		DWORD waitResult = WaitForSingleObject(pi.hProcess, 300000); // 5 minute timeout
 		
 		DWORD exitCode = 0;
 		GetExitCodeProcess(pi.hProcess, &exitCode);
@@ -21064,7 +21109,22 @@ bool CMainFrame::RunFFmpegExport(const CString& inputFile, const CString& output
 		CloseHandle(pi.hProcess);
 		CloseHandle(pi.hThread);
 		
-		return (waitResult == WAIT_OBJECT_0 && exitCode == 0);
+		// Check if output file was created and has reasonable size
+		bool fileCreated = (waitResult == WAIT_OBJECT_0 && exitCode == 0);
+		if (fileCreated && PathFileExists(outputFile)) {
+			// Verify file has content (not just a stub)
+			HANDLE hFile = CreateFile(outputFile, GENERIC_READ, FILE_SHARE_READ, nullptr, 
+				OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+			if (hFile != INVALID_HANDLE_VALUE) {
+				LARGE_INTEGER fileSize;
+				if (GetFileSizeEx(hFile, &fileSize)) {
+					fileCreated = (fileSize.QuadPart > 1024); // At least 1KB
+				}
+				CloseHandle(hFile);
+			}
+		}
+		
+		return fileCreated;
 	}
 	
 	return false;

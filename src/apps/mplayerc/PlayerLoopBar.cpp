@@ -193,7 +193,30 @@ void CPlayerLoopBar::OnAddLoop()
 	
 	CLoopEditDlg dlg(currentPos, currentPos + 10 * UNITS, this);
 	if (dlg.DoModal() == IDOK) {
-		AddLoop(dlg.GetName(), dlg.GetStartTime(), dlg.GetEndTime());
+		// Validate loop doesn't overlap with existing loops
+		REFERENCE_TIME newStart = dlg.GetStartTime();
+		REFERENCE_TIME newEnd = dlg.GetEndTime();
+		
+		// Check for overlaps (optional warning)
+		bool hasOverlap = false;
+		for (const auto& loop : m_loops) {
+			if ((newStart >= loop.startTime && newStart <= loop.endTime) ||
+				(newEnd >= loop.startTime && newEnd <= loop.endTime) ||
+				(newStart <= loop.startTime && newEnd >= loop.endTime)) {
+				hasOverlap = true;
+				break;
+			}
+		}
+		
+		if (hasOverlap) {
+			int result = AfxMessageBox(L"This loop overlaps with an existing loop. Continue anyway?", 
+				MB_YESNO | MB_ICONQUESTION);
+			if (result != IDYES) {
+				return;
+			}
+		}
+		
+		AddLoop(dlg.GetName(), newStart, newEnd);
 	}
 }
 
@@ -233,7 +256,25 @@ void CPlayerLoopBar::OnExportLoop()
 	int sel = m_list.GetNextItem(-1, LVNI_SELECTED);
 	if (sel >= 0 && sel < (int)m_loops.size()) {
 		const auto& loop = m_loops[sel];
+		
+		// Validate loop has reasonable duration
+		REFERENCE_TIME duration = loop.endTime - loop.startTime;
+		if (duration <= 0) {
+			AfxMessageBox(L"Invalid loop: end time must be after start time.", MB_ICONERROR);
+			return;
+		}
+		
+		if (duration < UNITS) { // Less than 1 second
+			int result = AfxMessageBox(L"This loop is very short (less than 1 second). Continue export?", 
+				MB_YESNO | MB_ICONQUESTION);
+			if (result != IDYES) {
+				return;
+			}
+		}
+		
 		m_pMainFrame->ExportLoop(loop.name, loop.startTime, loop.endTime);
+	} else {
+		AfxMessageBox(L"Please select a loop to export.", MB_ICONINFORMATION);
 	}
 }
 
