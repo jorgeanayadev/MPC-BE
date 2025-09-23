@@ -22,6 +22,7 @@
 #include "stdafx.h"
 #include "MainFrm.h"
 #include "PlayerSeekBar.h"
+#include "PlayerLoopBar.h"
 
 #define SHOW_DELAY    200
 #define AUTOPOP_DELAY 1000
@@ -404,6 +405,17 @@ void CPlayerSeekBar::OnPaint()
 				}
 				if (bEnabled) {
 					funcMarkChannelTheme(bPos, memdc, m_penRepeatAB, rc, true);
+				}
+			}
+
+			// Draw loop markers
+			for (size_t i = 0; i < m_pMainFrame->m_wndLoopBar.GetLoopCount(); i++) {
+				const LoopEntry* loop = m_pMainFrame->m_wndLoopBar.GetLoop((int)i);
+				if (loop && loop->enabled) {
+					REFERENCE_TIME loopStartPos = loop->startTime;
+					REFERENCE_TIME loopEndPos = loop->endTime;
+					funcMarkChannelTheme(loopStartPos, memdc, m_penLoops, rc, false);
+					funcMarkChannelTheme(loopEndPos, memdc, m_penLoops, rc, false);
 				}
 			}
 		}
@@ -828,6 +840,9 @@ void CPlayerSeekBar::SetColor()
 
 		m_penRepeatAB.DeleteObject();
 		m_penRepeatAB.CreatePen(PS_SOLID, 0, ThemeRGB(242, 13, 13));
+
+		m_penLoops.DeleteObject();
+		m_penLoops.CreatePen(PS_SOLID, 0, ThemeRGB(13, 242, 13)); // Green for loops
 
 		ThemeRGB(45, 55, 60, R, G, B);
 		tvBufferingProgress[0] = { 0, 0, COLOR16(R * 256), COLOR16(G * 256), COLOR16(B * 256), 255 * 256 };

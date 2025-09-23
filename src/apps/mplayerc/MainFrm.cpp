@@ -282,6 +282,7 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_REPEAT_FOREVER, OnUpdateRepeatForever)
 	ON_COMMAND_RANGE(ID_PLAY_REPEAT_AB, ID_PLAY_REPEAT_AB_MARK_B, OnABRepeat)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_PLAY_REPEAT_AB, ID_PLAY_REPEAT_AB_MARK_B, OnUpdateABRepeat)
+	ON_COMMAND(ID_LOOP_QUICK_ADD, OnLoopQuickAdd)
 
 	ON_COMMAND(ID_VIEW_CAPTIONMENU, OnViewCaptionmenu)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_CAPTIONMENU, OnUpdateViewCaptionmenu)
@@ -7485,6 +7486,27 @@ void CMainFrame::OnViewLoopBar()
 void CMainFrame::OnUpdateViewLoopBar(CCmdUI* pCmdUI)
 {
 	pCmdUI->SetCheck(m_wndLoopBar.IsWindowVisible());
+}
+
+void CMainFrame::OnLoopQuickAdd()
+{
+	if (m_pMS) {
+		REFERENCE_TIME currentPos;
+		if (SUCCEEDED(m_pMS->GetCurrentPosition(&currentPos))) {
+			REFERENCE_TIME endTime = currentPos + 10 * UNITS; // 10 seconds
+			
+			// Generate a unique name
+			CString name;
+			name.Format(L"Loop %d", (int)m_wndLoopBar.GetLoopCount() + 1);
+			
+			m_wndLoopBar.AddLoop(name, currentPos, endTime);
+			
+			// Show the loop bar if it's not visible
+			if (!m_wndLoopBar.IsWindowVisible()) {
+				ShowControlBarInternal(&m_wndLoopBar, true);
+			}
+		}
+	}
 }
 
 // Navigation menu

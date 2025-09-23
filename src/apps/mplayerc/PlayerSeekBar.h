@@ -23,6 +23,8 @@
 
 #include "DSUtil/DSMPropertyBag.h"
 
+struct LoopEntry; // Forward declaration
+
 // CPlayerSeekBar
 
 class CMainFrame;
@@ -82,6 +84,7 @@ private:
 
 	CPen m_penPlayed1, m_penPlayed2, m_penChapters;
 	CPen m_penRepeatAB;
+	CPen m_penLoops;
 
 	TRIVERTEX tvBufferingProgress[2];
 

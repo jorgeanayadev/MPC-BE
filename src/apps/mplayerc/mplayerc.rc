@@ -1765,6 +1765,8 @@ BEGIN
             MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
             MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
             MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
+            MENUITEM SEPARATOR
+            MENUITEM "Quick Add &Loop",             ID_LOOP_QUICK_ADD
         END
         MENUITEM SEPARATOR
         MENUITEM "&Increase Rate",              ID_PLAY_INCRATE
@@ -1837,6 +1839,8 @@ BEGIN
             MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
             MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
             MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
+            MENUITEM SEPARATOR
+            MENUITEM "Quick Add &Loop",             ID_LOOP_QUICK_ADD
         END
         MENUITEM SEPARATOR
         MENUITEM "Fu&ll Screen",                ID_VIEW_FULLSCREEN
@@ -2035,6 +2039,8 @@ BEGIN
                 MENUITEM SEPARATOR
                 MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
                 MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
+            MENUITEM SEPARATOR
+            MENUITEM "Quick Add &Loop",             ID_LOOP_QUICK_ADD
                 MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
             END
             MENUITEM SEPARATOR
@@ -2469,6 +2475,7 @@ BEGIN
     IDS_PLAYLOOPMODE_AB     "A-B Repeat: Reset Positions"
     IDS_PLAYLOOPMODE_AB_MARK_A "A-B Repeat: Mark A Position"
     IDS_PLAYLOOPMODE_AB_MARK_B "A-B Repeat: Mark B Position"
+    IDS_LOOP_QUICK_ADD      "Quick Add Loop (10 seconds)"
     IDS_ADDTOPLAYLISTROMCLIPBOARD "Add to playlist from clipboard"
     IDS_MOVEWINDOWBYVIDEO_ONOFF "Move window by the video area: On/Off"
     IDS_MOVEWINDOWBYVIDEO_ON "Move window by the video area: On"
@@ -2730,6 +2737,7 @@ END
 STRINGTABLE
 BEGIN
     ID_SHOW_MILLISECONDS    "Show milliseconds"
+    ID_VIEW_LOOPBAR        "Loop Manager"
 END
 
 STRINGTABLE

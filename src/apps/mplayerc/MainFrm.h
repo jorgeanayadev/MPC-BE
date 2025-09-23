@@ -984,6 +984,7 @@ public:
 	afx_msg void OnUpdateViewPlaylist(CCmdUI* pCmdUI);
 	afx_msg void OnViewLoopBar();
 	afx_msg void OnUpdateViewLoopBar(CCmdUI* pCmdUI);
+	afx_msg void OnLoopQuickAdd();
 	afx_msg void OnViewCapture();
 	afx_msg void OnUpdateViewCapture(CCmdUI* pCmdUI);
 	afx_msg void OnViewShaderEditor();
