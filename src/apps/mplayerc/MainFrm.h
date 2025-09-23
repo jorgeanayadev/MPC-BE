@@ -31,6 +31,7 @@
 #include "PlayerStatusBar.h"
 #include "PlayerSubresyncBar.h"
 #include "PlayerPlaylistBar.h"
+#include "PlayerLoopBar.h"
 #include "PlayerCaptureBar.h"
 #include "PlayerNavigationBar.h"
 #include "PlayerShaderEditorBar.h"
@@ -771,6 +772,11 @@ public:
 	void PerformABRepeat();
 	void DisableABRepeat();
 
+	// Loop management and export
+	void ExportLoop(const CString& name, REFERENCE_TIME startTime, REFERENCE_TIME endTime);
+	bool RunFFmpegExport(const CString& inputFile, const CString& outputFile, 
+		REFERENCE_TIME startTime, REFERENCE_TIME endTime);
+
 	// Implementation
 public:
 	virtual ~CMainFrame();
@@ -976,6 +982,8 @@ public:
 	afx_msg void OnUpdateViewSubresync(CCmdUI* pCmdUI);
 	afx_msg void OnViewPlaylist();
 	afx_msg void OnUpdateViewPlaylist(CCmdUI* pCmdUI);
+	afx_msg void OnViewLoopBar();
+	afx_msg void OnUpdateViewLoopBar(CCmdUI* pCmdUI);
 	afx_msg void OnViewCapture();
 	afx_msg void OnUpdateViewCapture(CCmdUI* pCmdUI);
 	afx_msg void OnViewShaderEditor();
@@ -1164,6 +1172,7 @@ public:
 
 	CPlayerToolBar		m_wndToolBar;
 	CPlayerPlaylistBar	m_wndPlaylistBar;
+	CPlayerLoopBar		m_wndLoopBar;
 	CFlyBar				m_wndFlyBar;
 	CPreView			m_wndPreView; // SmartSeek
 	bool				m_bWndPreViewOn = false;

@@ -369,6 +369,11 @@
 #define ID_PLAY_REPEAT_AB               1201
 #define ID_PLAY_REPEAT_AB_MARK_A        1202
 #define ID_PLAY_REPEAT_AB_MARK_B        1203
+#define ID_VIEW_LOOPBAR                 1204
+#define ID_LOOP_ADD                     1205
+#define ID_LOOP_REMOVE                  1206
+#define ID_LOOP_EDIT                    1207
+#define ID_LOOP_EXPORT                  1208
 #define ID_ADDTOPLAYLISTROMCLIPBOARD    1210
 #define ID_MOVEWINDOWBYVIDEO_ONOFF      1211
 #define ID_PLAYLIST_OPENFOLDER          1212
@@ -1799,13 +1804,25 @@
 #define IDS_EXTERNAL                    44103
 #define IDS_SUB_SAVE_EXTERNAL_STYLE_FILE 44104
 
+#define IDD_LOOP_EDIT_DLG               44105
+#define IDC_LOOP_LIST                   22054
+#define IDC_ADD_LOOP                    22055
+#define IDC_REMOVE_LOOP                 22056
+#define IDC_EDIT_LOOP                   22057
+#define IDC_EXPORT_LOOP                 22058
+#define IDC_LOOP_NAME                   22059
+#define IDC_START_TIME                  22060
+#define IDC_END_TIME                    22061
+#define IDC_CURRENT_POS                 22062
+#define IDC_CURRENT_POS_END             22063
+
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        44105
-#define _APS_NEXT_COMMAND_VALUE         1204
-#define _APS_NEXT_CONTROL_VALUE         22054
+#define _APS_NEXT_RESOURCE_VALUE        44106
+#define _APS_NEXT_COMMAND_VALUE         1209
+#define _APS_NEXT_CONTROL_VALUE         22064
 #define _APS_NEXT_SYMED_VALUE           24044
 #endif
 #endif

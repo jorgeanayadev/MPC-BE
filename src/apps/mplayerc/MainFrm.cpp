@@ -291,6 +291,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_SUBRESYNC, OnUpdateViewSubresync)
 	ON_COMMAND(ID_VIEW_PLAYLIST, OnViewPlaylist)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_PLAYLIST, OnUpdateViewPlaylist)
+	ON_COMMAND(ID_VIEW_LOOPBAR, OnViewLoopBar)
+	ON_UPDATE_COMMAND_UI(ID_VIEW_LOOPBAR, OnUpdateViewLoopBar)
 	ON_COMMAND(ID_VIEW_CAPTURE, OnViewCapture)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_CAPTURE, OnUpdateViewCapture)
 	ON_COMMAND(ID_VIEW_SHADEREDITOR, OnViewShaderEditor)
@@ -642,6 +644,7 @@ CMainFrame::CMainFrame() :
 	m_wndFlyBar(this),
 	m_wndPreView(this),
 	m_wndPlaylistBar(this),
+	m_wndLoopBar(this),
 	m_wndCaptureBar(this),
 	m_wndSubresyncBar(this),
 	m_dMediaInfoFPS(0.0),
@@ -785,6 +788,12 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 	m_wndPlaylistBar.EnableDocking(CBRS_ALIGN_ANY);
 	m_wndPlaylistBar.SetHeight(100);
 	m_dockingbars.emplace_back(&m_wndPlaylistBar);
+
+	m_wndLoopBar.Create(this, AFX_IDW_DOCKBAR_RIGHT);
+	m_wndLoopBar.SetBarStyle(m_wndLoopBar.GetBarStyle() | CBRS_TOOLTIPS | CBRS_FLYBY | CBRS_SIZE_DYNAMIC);
+	m_wndLoopBar.EnableDocking(CBRS_ALIGN_ANY);
+	m_wndLoopBar.SetHeight(150);
+	m_dockingbars.emplace_back(&m_wndLoopBar);
 
 	std::vector<CStringW> recentPath;
 	AfxGetMyApp()->m_HistoryFile.GetRecentPaths(recentPath, 1);
@@ -2547,6 +2556,18 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 						if (m_abRepeatPositionBEnabled && rtNow >= m_abRepeatPositionB) {
 							PerformABRepeat();
 							return;
+						}
+
+						// Check for loop management
+						int currentLoopIndex;
+						if (m_wndLoopBar.IsInLoop(rtNow, currentLoopIndex)) {
+							const LoopEntry* loop = m_wndLoopBar.GetLoop(currentLoopIndex);
+							if (loop && loop->enabled && rtNow >= loop->endTime) {
+								// Jump back to start of current loop
+								m_pMS->SetPositions(&loop->startTime, AM_SEEKING_AbsolutePositioning,
+									nullptr, AM_SEEKING_NoPositioning);
+								return;
+							}
 						}
 
 						// autosave subtitle sync after play
@@ -7453,6 +7474,19 @@ void CMainFrame::OnUpdateViewPlaylist(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(m_wndPlaylistBar.IsWindowVisible());
 }
 
+void CMainFrame::OnViewLoopBar()
+{
+	ShowControlBarInternal(&m_wndLoopBar, !m_wndLoopBar.IsWindowVisible());
+	if (m_wndLoopBar.IsWindowVisible()) {
+		m_wndLoopBar.SetFocus();
+	}
+}
+
+void CMainFrame::OnUpdateViewLoopBar(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(m_wndLoopBar.IsWindowVisible());
+}
+
 // Navigation menu
 void CMainFrame::OnViewNavigation()
 {
@@ -7881,7 +7915,7 @@ void CMainFrame::OnViewRotate(UINT nID)
 			}
 
 			CString info;
-			info.Format(L"Rotation: %d°", rotation);
+			info.Format(L"Rotation: %dï¿½", rotation);
 			SendStatusMessage(info, 3000);
 		}
 	}
@@ -20928,6 +20962,90 @@ void CMainFrame::OnUpdateRepeatForever(CCmdUI* pCmdUI)
 	if (pCmdUI->m_pMenu) {
 		pCmdUI->m_pMenu->CheckMenuItem(ID_REPEAT_FOREVER, MF_BYCOMMAND | (s.fLoopForever ? MF_CHECKED : MF_UNCHECKED));
 	}
+}
+
+void CMainFrame::ExportLoop(const CString& name, REFERENCE_TIME startTime, REFERENCE_TIME endTime)
+{
+	CString currentFile = m_SessionInfo.Path;
+	if (currentFile.IsEmpty()) {
+		AfxMessageBox(L"No file is currently loaded.", MB_ICONERROR);
+		return;
+	}
+
+	// Create suggested filename
+	CString suggestedName = name;
+	suggestedName.Replace(L":", L"-");
+	suggestedName.Replace(L"/", L"-");
+	suggestedName.Replace(L"\\", L"-");
+	suggestedName.Replace(L"*", L"-");
+	suggestedName.Replace(L"?", L"-");
+	suggestedName.Replace(L"\"", L"-");
+	suggestedName.Replace(L"<", L"-");
+	suggestedName.Replace(L">", L"-");
+	suggestedName.Replace(L"|", L"-");
+
+	// Get output path
+	CFileDialog dlg(FALSE, L"mp4", suggestedName + L".mp4",
+		OFN_HIDEREADONLY | OFN_OVERWRITEPROMPT,
+		L"MP4 files (*.mp4)|*.mp4|AVI files (*.avi)|*.avi|MKV files (*.mkv)|*.mkv|All files (*.*)|*.*||");
+
+	if (dlg.DoModal() == IDOK) {
+		CString outputFile = dlg.GetPathName();
+		
+		if (RunFFmpegExport(currentFile, outputFile, startTime, endTime)) {
+			CString msg;
+			msg.Format(L"Loop '%s' exported successfully to:\n%s", name, outputFile);
+			AfxMessageBox(msg, MB_ICONINFORMATION);
+		} else {
+			AfxMessageBox(L"Export failed. Please check that FFmpeg is properly configured.", MB_ICONERROR);
+		}
+	}
+}
+
+bool CMainFrame::RunFFmpegExport(const CString& inputFile, const CString& outputFile, 
+	REFERENCE_TIME startTime, REFERENCE_TIME endTime)
+{
+	CAppSettings& s = AfxGetAppSettings();
+	CString ffmpegPath = GetFullExePath(s.strFFmpegExePath, true);
+	
+	if (ffmpegPath.IsEmpty()) {
+		AfxMessageBox(L"FFmpeg not found. Please configure FFmpeg path in settings.", MB_ICONERROR);
+		return false;
+	}
+
+	// Convert REFERENCE_TIME to seconds
+	double startSec = (double)startTime / UNITS;
+	double durationSec = (double)(endTime - startTime) / UNITS;
+
+	// Build FFmpeg command
+	CString command;
+	command.Format(L"\"%s\" -i \"%s\" -ss %.3f -t %.3f -c copy \"%s\"",
+		ffmpegPath, inputFile, startSec, durationSec, outputFile);
+
+	// Execute FFmpeg
+	STARTUPINFO si = { sizeof(si) };
+	PROCESS_INFORMATION pi = { 0 };
+	si.dwFlags = STARTF_USESHOWWINDOW;
+	si.wShowWindow = SW_HIDE;
+
+	BOOL success = CreateProcess(nullptr, command.GetBuffer(), nullptr, nullptr, FALSE, 
+		CREATE_NO_WINDOW, nullptr, nullptr, &si, &pi);
+	command.ReleaseBuffer();
+
+	if (success) {
+		// Wait for process to complete with timeout
+		DWORD waitResult = WaitForSingleObject(pi.hProcess, 60000); // 60 second timeout
+		
+		DWORD exitCode = 0;
+		GetExitCodeProcess(pi.hProcess, &exitCode);
+		
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+		
+		return (waitResult == WAIT_OBJECT_0 && exitCode == 0);
+	}
+	
+	return false;
 }
 
 void CMainFrame::SaveHistory()

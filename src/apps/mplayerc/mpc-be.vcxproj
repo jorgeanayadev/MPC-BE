@@ -159,6 +159,8 @@
     <ClCompile Include="PlayerListCtrl.cpp" />
     <ClCompile Include="PlayerNavigationBar.cpp" />
     <ClCompile Include="PlayerPlaylistBar.cpp" />
+    <ClCompile Include="PlayerLoopBar.cpp" />
+    <ClCompile Include="LoopEditDlg.cpp" />
     <ClCompile Include="PlayerSeekBar.cpp" />
     <ClCompile Include="PlayerShaderEditorBar.cpp" />
     <ClCompile Include="PlayerStatusBar.cpp" />
@@ -296,6 +298,8 @@
     <ClInclude Include="PlayerListCtrl.h" />
     <ClInclude Include="PlayerNavigationBar.h" />
     <ClInclude Include="PlayerPlaylistBar.h" />
+    <ClInclude Include="PlayerLoopBar.h" />
+    <ClInclude Include="LoopEditDlg.h" />
     <ClInclude Include="PlayerSeekBar.h" />
     <ClInclude Include="PlayerShaderEditorBar.h" />
     <ClInclude Include="PlayerStatusBar.h" />
