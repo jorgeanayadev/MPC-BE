@@ -21059,11 +21059,14 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 		// Export as plain text
 		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
 			REFERENCE_TIME duration = m_abRepeatPositionB - m_abRepeatPositionA;
+			if (duration < 0) {
+				duration = -duration;
+			}
 			exportText.Format(
 				L"Loop Start: %s\r\nLoop End: %s\r\nDuration: %s",
 				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
 				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
-				ReftimeToString2(abs(duration), false).GetString()
+				ReftimeToString2(duration, false).GetString()
 			);
 		} else if (m_abRepeatPositionAEnabled) {
 			exportText.Format(L"Loop Start: %s", ReftimeToString2(m_abRepeatPositionA, false).GetString());
@@ -21082,6 +21085,7 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 			inputFile = curFile;
 			
 			// Create output file name by finding extension and base name
+			// Note: Using PathFind* for consistency with existing codebase (see PPageFileInfoRes.cpp)
 			LPCWSTR pExt = ::PathFindExtensionW(curFile);
 			CString ext = (pExt && *pExt) ? pExt : L".mp4";
 			
