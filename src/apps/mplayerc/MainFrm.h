@@ -970,6 +970,8 @@ public:
 	afx_msg void OnUpdateRepeatForever(CCmdUI* pCmdUI);
 	afx_msg void OnABRepeat(UINT nID);
 	afx_msg void OnUpdateABRepeat(CCmdUI* pCmdUI);
+	afx_msg void OnABRepeatExport(UINT nID);
+	afx_msg void OnUpdateABRepeatExport(CCmdUI* pCmdUI);
 
 	afx_msg void OnViewCaptionmenu();
 	afx_msg void OnViewNavigation();

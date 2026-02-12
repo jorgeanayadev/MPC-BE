@@ -1747,6 +1747,11 @@ BEGIN
             MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
             MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
             MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
+            POPUP "A-B (&Export)"
+            BEGIN
+                MENUITEM "Export as Plain &Text",       ID_PLAY_REPEAT_AB_EXPORT_TEXT
+                MENUITEM "Export as &FFmpeg Command",   ID_PLAY_REPEAT_AB_EXPORT_FFMPEG
+            END
         END
         MENUITEM SEPARATOR
         MENUITEM "&Increase Rate",              ID_PLAY_INCRATE
@@ -1819,6 +1824,11 @@ BEGIN
             MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
             MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
             MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
+            POPUP "A-B (&Export)"
+            BEGIN
+                MENUITEM "Export as Plain &Text",       ID_PLAY_REPEAT_AB_EXPORT_TEXT
+                MENUITEM "Export as &FFmpeg Command",   ID_PLAY_REPEAT_AB_EXPORT_FFMPEG
+            END
         END
         MENUITEM SEPARATOR
         MENUITEM "Fu&ll Screen",                ID_VIEW_FULLSCREEN
@@ -2016,6 +2026,11 @@ BEGIN
                 MENUITEM "A-B (&Reset)",                ID_PLAY_REPEAT_AB
                 MENUITEM "A-B (Mark &A)",               ID_PLAY_REPEAT_AB_MARK_A
                 MENUITEM "A-B (Mark &B)",               ID_PLAY_REPEAT_AB_MARK_B
+                POPUP "A-B (&Export)"
+                BEGIN
+                    MENUITEM "Export as Plain &Text",       ID_PLAY_REPEAT_AB_EXPORT_TEXT
+                    MENUITEM "Export as &FFmpeg Command",   ID_PLAY_REPEAT_AB_EXPORT_FFMPEG
+                END
             END
             MENUITEM SEPARATOR
             MENUITEM "&Increase Rate",              ID_PLAY_INCRATE
@@ -2455,6 +2470,8 @@ BEGIN
     IDS_PLAYLOOPMODE_AB     "A-B Repeat: Reset Positions"
     IDS_PLAYLOOPMODE_AB_MARK_A "A-B Repeat: Mark A Position"
     IDS_PLAYLOOPMODE_AB_MARK_B "A-B Repeat: Mark B Position"
+    IDS_PLAYLOOPMODE_AB_EXPORT_TEXT "A-B Repeat: Export as Plain Text"
+    IDS_PLAYLOOPMODE_AB_EXPORT_FFMPEG "A-B Repeat: Export as FFmpeg Command"
     IDS_ADDTOPLAYLISTROMCLIPBOARD "Add to playlist from clipboard"
     IDS_MOVEWINDOWBYVIDEO_ONOFF "Move window by the video area: On/Off"
     IDS_MOVEWINDOWBYVIDEO_ON "Move window by the video area: On"
