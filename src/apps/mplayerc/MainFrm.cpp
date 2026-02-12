@@ -21077,15 +21077,23 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 		CString outputFile = L"output.mp4";
 
 		// Try to get the actual file name if available
-		if (!m_wndPlaylistBar.m_pl.GetCurFileName().IsEmpty()) {
-			CPath path(m_wndPlaylistBar.m_pl.GetCurFileName());
-			inputFile = path.m_strPath;
+		CString curFile = m_wndPlaylistBar.m_pl.GetCurFileName();
+		if (!curFile.IsEmpty()) {
+			inputFile = curFile;
 			
-			// Create output file name
-			CString ext = path.GetExtension();
-			path.StripPath();
-			path.RemoveExtension();
-			outputFile.Format(L"%s_cut%s", path.m_strPath.GetString(), ext.GetString());
+			// Create output file name by finding extension and base name
+			LPCWSTR pExt = ::PathFindExtensionW(curFile);
+			CString ext = pExt ? pExt : L".mp4";
+			LPCWSTR pFileName = ::PathFindFileNameW(curFile);
+			CString baseName = pFileName ? pFileName : L"output";
+			
+			// Remove extension from base name
+			int dotPos = baseName.ReverseFind(L'.');
+			if (dotPos != -1) {
+				baseName = baseName.Left(dotPos);
+			}
+			
+			outputFile.Format(L"%s_cut%s", baseName.GetString(), ext.GetString());
 		}
 
 		// Build FFmpeg command
