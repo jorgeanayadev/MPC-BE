@@ -21059,15 +21059,11 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 		// Export as plain text
 		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
 			REFERENCE_TIME duration = m_abRepeatPositionB - m_abRepeatPositionA;
-			// Ensure duration is positive (B should be > A)
-			if (duration < 0) {
-				duration = 0;
-			}
 			exportText.Format(
 				L"Loop Start: %s\r\nLoop End: %s\r\nDuration: %s",
 				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
 				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
-				ReftimeToString2(duration, false).GetString()
+				ReftimeToString2(abs(duration), false).GetString()
 			);
 		} else if (m_abRepeatPositionAEnabled) {
 			exportText.Format(L"Loop Start: %s", ReftimeToString2(m_abRepeatPositionA, false).GetString());
@@ -21087,14 +21083,19 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 			
 			// Create output file name by finding extension and base name
 			LPCWSTR pExt = ::PathFindExtensionW(curFile);
-			CString ext = pExt ? pExt : L".mp4";
+			CString ext = (pExt && *pExt) ? pExt : L".mp4";
+			
 			LPCWSTR pFileName = ::PathFindFileNameW(curFile);
-			CString baseName = pFileName ? pFileName : L"output";
+			CString baseName = pFileName;
 			
 			// Remove extension from base name
 			int dotPos = baseName.ReverseFind(L'.');
 			if (dotPos != -1) {
 				baseName = baseName.Left(dotPos);
+			}
+			
+			if (baseName.IsEmpty()) {
+				baseName = L"output";
 			}
 			
 			outputFile.Format(L"%s_cut%s", baseName.GetString(), ext.GetString());
