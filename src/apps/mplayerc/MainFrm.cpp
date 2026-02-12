@@ -21059,6 +21059,10 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 		// Export as plain text
 		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
 			REFERENCE_TIME duration = m_abRepeatPositionB - m_abRepeatPositionA;
+			// Ensure duration is positive (B should be > A)
+			if (duration < 0) {
+				duration = 0;
+			}
 			exportText.Format(
 				L"Loop Start: %s\r\nLoop End: %s\r\nDuration: %s",
 				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
