@@ -283,6 +283,8 @@ BEGIN_MESSAGE_MAP(CMainFrame, CFrameWnd)
 	ON_UPDATE_COMMAND_UI(ID_REPEAT_FOREVER, OnUpdateRepeatForever)
 	ON_COMMAND_RANGE(ID_PLAY_REPEAT_AB, ID_PLAY_REPEAT_AB_MARK_B, OnABRepeat)
 	ON_UPDATE_COMMAND_UI_RANGE(ID_PLAY_REPEAT_AB, ID_PLAY_REPEAT_AB_MARK_B, OnUpdateABRepeat)
+	ON_COMMAND_RANGE(ID_PLAY_REPEAT_AB_EXPORT_TEXT, ID_PLAY_REPEAT_AB_EXPORT_FFMPEG, OnABRepeatExport)
+	ON_UPDATE_COMMAND_UI_RANGE(ID_PLAY_REPEAT_AB_EXPORT_TEXT, ID_PLAY_REPEAT_AB_EXPORT_FFMPEG, OnUpdateABRepeatExport)
 
 	ON_COMMAND(ID_VIEW_CAPTIONMENU, OnViewCaptionmenu)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_CAPTIONMENU, OnUpdateViewCaptionmenu)
@@ -7902,7 +7904,7 @@ void CMainFrame::OnViewRotate(UINT nID)
 			}
 
 			CString info;
-			info.Format(L"Rotation: %d°", rotation);
+			info.Format(L"Rotation: %dï¿½", rotation);
 			SendStatusMessage(info, 3000);
 		}
 	}
@@ -21043,6 +21045,111 @@ bool CMainFrame::CheckABRepeat(REFERENCE_TIME& aPos, REFERENCE_TIME& bPos, bool&
 		}
 	}
 	return false;
+}
+
+void CMainFrame::OnABRepeatExport(UINT nID)
+{
+	if (!m_abRepeatPositionAEnabled && !m_abRepeatPositionBEnabled) {
+		return;
+	}
+
+	CStringW exportText;
+
+	if (nID == ID_PLAY_REPEAT_AB_EXPORT_TEXT) {
+		// Export as plain text
+		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
+			REFERENCE_TIME duration = m_abRepeatPositionB - m_abRepeatPositionA;
+			if (duration < 0) {
+				duration = -duration;
+			}
+			exportText.Format(
+				L"Loop Start: %s\r\nLoop End: %s\r\nDuration: %s",
+				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
+				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
+				ReftimeToString2(duration, false).GetString()
+			);
+		} else if (m_abRepeatPositionAEnabled) {
+			exportText.Format(L"Loop Start: %s", ReftimeToString2(m_abRepeatPositionA, false).GetString());
+		} else if (m_abRepeatPositionBEnabled) {
+			exportText.Format(L"Loop End: %s", ReftimeToString2(m_abRepeatPositionB, false).GetString());
+		}
+	}
+	else if (nID == ID_PLAY_REPEAT_AB_EXPORT_FFMPEG) {
+		// Export as FFmpeg command
+		CString inputFile = L"input.mp4";
+		CString outputFile = L"output.mp4";
+
+		// Try to get the actual file name if available
+		CString curFile = m_wndPlaylistBar.m_pl.GetCurFileName();
+		if (!curFile.IsEmpty()) {
+			inputFile = curFile;
+			
+			// Create output file name by finding extension and base name
+			// Note: Using PathFind* for consistency with existing codebase (see PPageFileInfoRes.cpp)
+			LPCWSTR pExt = ::PathFindExtensionW(curFile);
+			CString ext = (pExt && *pExt) ? pExt : L".mp4";
+			
+			LPCWSTR pFileName = ::PathFindFileNameW(curFile);
+			CString baseName = pFileName;
+			
+			// Remove extension from base name
+			int dotPos = baseName.ReverseFind(L'.');
+			if (dotPos != -1) {
+				baseName = baseName.Left(dotPos);
+			}
+			
+			if (baseName.IsEmpty()) {
+				baseName = L"output";
+			}
+			
+			outputFile.Format(L"%s_cut%s", baseName.GetString(), ext.GetString());
+		}
+
+		// Build FFmpeg command
+		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
+			exportText.Format(
+				L"ffmpeg -i \"%s\" -ss %s -to %s -c copy \"%s\"",
+				inputFile.GetString(),
+				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
+				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
+				outputFile.GetString()
+			);
+		} else if (m_abRepeatPositionAEnabled) {
+			exportText.Format(
+				L"ffmpeg -i \"%s\" -ss %s -c copy \"%s\"",
+				inputFile.GetString(),
+				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
+				outputFile.GetString()
+			);
+		} else if (m_abRepeatPositionBEnabled) {
+			exportText.Format(
+				L"ffmpeg -i \"%s\" -to %s -c copy \"%s\"",
+				inputFile.GetString(),
+				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
+				outputFile.GetString()
+			);
+		}
+	}
+
+	if (!exportText.IsEmpty()) {
+		CopyStringToClipboard(m_hWnd, exportText);
+		
+		// Show confirmation message
+		CStringW msg;
+		if (nID == ID_PLAY_REPEAT_AB_EXPORT_TEXT) {
+			msg = L"A-B repeat positions copied to clipboard as plain text";
+		} else {
+			msg = L"A-B repeat FFmpeg command copied to clipboard";
+		}
+		m_OSD.DisplayMessage(OSD_TOPLEFT, msg, 3000);
+	}
+}
+
+void CMainFrame::OnUpdateABRepeatExport(CCmdUI* pCmdUI)
+{
+	// Enable export only if at least one loop point is set
+	bool canExport = m_abRepeatPositionAEnabled || m_abRepeatPositionBEnabled;
+	pCmdUI->Enable(canExport);
 }
 
 void CMainFrame::OnUpdateRepeatForever(CCmdUI* pCmdUI)

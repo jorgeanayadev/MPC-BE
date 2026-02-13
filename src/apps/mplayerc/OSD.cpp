@@ -401,6 +401,36 @@ void COSD::DrawSeekbar()
 	}
 
 	DrawRect(m_rectCursor, &m_brushCursor);
+
+	// Display A-B repeat (loop) times if active
+	if (m_SeekbarFont.GetSafeHandle()) {
+		REFERENCE_TIME aPos = 0, bPos = 0;
+		bool aEnabled = false, bEnabled = false;
+		if (m_pMainFrame->CheckABRepeat(aPos, bPos, aEnabled, bEnabled)) {
+			CStringW loopText;
+			if (aEnabled && bEnabled) {
+				loopText.Format(L"Loop: %s - %s", 
+					ReftimeToString2(aPos, false).GetString(),
+					ReftimeToString2(bPos, false).GetString());
+			} else if (aEnabled) {
+				loopText.Format(L"Loop Start: %s", ReftimeToString2(aPos, false).GetString());
+			} else if (bEnabled) {
+				loopText.Format(L"Loop End: %s", ReftimeToString2(bPos, false).GetString());
+			}
+
+			if (!loopText.IsEmpty()) {
+				m_MemDC.SelectObject(m_SeekbarFont);
+				m_MemDC.SetTextColor(OSD_COLOR_CURSOR);
+				
+				// Position the loop text below the seekbar
+				CRect loopTextRect = m_rectPosText;
+				loopTextRect.top = m_rectSeekBar.bottom + ScaleY(5);
+				loopTextRect.bottom = loopTextRect.top + m_SeekbarTextHeight;
+				
+				m_MemDC.DrawText(loopText, &loopTextRect, DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+			}
+		}
+	}
 }
 
 void COSD::DrawFlybar()
