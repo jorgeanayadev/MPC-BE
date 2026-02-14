@@ -265,6 +265,65 @@ void CPlayerStatusBar::SetStatusTimer(REFERENCE_TIME rtNow, REFERENCE_TIME rtDur
 	SetStatusTimer(str);
 }
 
+void CPlayerStatusBar::SetStatusTimer(REFERENCE_TIME rtNow, REFERENCE_TIME rtDur, bool bShowMilliSecs, const GUID& timeFormat,
+									  const REFERENCE_TIME* pLoopA, const REFERENCE_TIME* pLoopB)
+{
+	const bool bRemainingTime = AfxGetAppSettings().bRemainingTime && rtDur > 0;
+	const bool bShowZeroHours = AfxGetAppSettings().bShowZeroHours && rtDur >= (UNITS * 3600);
+
+	REFERENCE_TIME rt = bRemainingTime ? rtDur - rtNow : rtNow;
+
+	CStringW strPos, strDur;
+
+	if (timeFormat == TIME_FORMAT_MEDIA_TIME) {
+		if (bShowMilliSecs) {
+			strPos = ReftimeToString(rt, bShowZeroHours);
+			strDur = ReftimeToString(rtDur, false);
+		} else {
+			strPos = ReftimeToString2(rt, bShowZeroHours);
+			strDur = ReftimeToString2(rtDur, false);
+		}
+	} else if (timeFormat == TIME_FORMAT_FRAME) {
+		strPos.Format(L"%I64d", rt);
+		strDur.Format(L"%I64d", rtDur);
+	}
+
+	CStringW str;
+	if (rtDur > 0 && rtNow < rtDur) {
+		if (bRemainingTime) {
+			str = L"- " + strPos + L" / " + strDur;
+		} else {
+			str = strPos + L" / " + strDur;
+		}
+	} else {
+		str = strPos;
+	}
+
+	// Append A-B repeat loop markers
+	if (pLoopA || pLoopB) {
+		CStringW strLoop = L" [";
+		if (pLoopA) {
+			if (bShowMilliSecs) {
+				strLoop += ReftimeToString(*pLoopA, false);
+			} else {
+				strLoop += ReftimeToString2(*pLoopA, false);
+			}
+		}
+		strLoop += L" - ";
+		if (pLoopB) {
+			if (bShowMilliSecs) {
+				strLoop += ReftimeToString(*pLoopB, false);
+			} else {
+			 strLoop += ReftimeToString2(*pLoopB, false);
+			}
+		}
+		strLoop += L"]";
+		str += strLoop;
+	}
+
+	SetStatusTimer(str);
+}
+
 void CPlayerStatusBar::ShowTimer(bool fShow)
 {
 	m_time.ShowWindow(fShow ? SW_SHOW : SW_HIDE);

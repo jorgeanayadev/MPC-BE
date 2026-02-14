@@ -2564,7 +2564,13 @@ void CMainFrame::OnTimer(UINT_PTR nIDEvent)
 							m_nCurSubtitle   = -1;
 							m_lSubtitleShift = 0;
 						}
-						m_wndStatusBar.SetStatusTimer(rtNow, rtDur, s.bShowMilliSecs || m_wndSubresyncBar.IsWindowVisible(), GetTimeFormat());
+						//m_wndStatusBar.SetStatusTimer(rtNow, rtDur, s.bShowMilliSecs || m_wndSubresyncBar.IsWindowVisible(), GetTimeFormat());
+						m_wndStatusBar.SetStatusTimer(rtNow, rtDur, s.bShowMilliSecs || m_wndSubresyncBar.IsWindowVisible(), GetTimeFormat(),
+							m_abRepeatPositionAEnabled ? &m_abRepeatPositionA : nullptr,
+							m_abRepeatPositionBEnabled ? &m_abRepeatPositionB : nullptr);
+						
+						
+
 						break;
 					case PM_DVD:
 						g_bExternalSubtitleTime = true;
@@ -21054,6 +21060,8 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 	}
 
 	CStringW exportText;
+	TimeCode_t tcA = ReftimeToTimecode(m_abRepeatPositionA);
+	TimeCode_t tcB = ReftimeToTimecode(m_abRepeatPositionB);
 
 	if (nID == ID_PLAY_REPEAT_AB_EXPORT_TEXT) {
 		// Export as plain text
@@ -21062,16 +21070,12 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 			if (duration < 0) {
 				duration = -duration;
 			}
-			exportText.Format(
-				L"Loop Start: %s\r\nLoop End: %s\r\nDuration: %s",
-				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
-				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
-				ReftimeToString2(duration, false).GetString()
-			);
-		} else if (m_abRepeatPositionAEnabled) {
-			exportText.Format(L"Loop Start: %s", ReftimeToString2(m_abRepeatPositionA, false).GetString());
-		} else if (m_abRepeatPositionBEnabled) {
-			exportText.Format(L"Loop End: %s", ReftimeToString2(m_abRepeatPositionB, false).GetString());
+			
+			exportText.Format(L"Loop Start: %02d:%02d:%02d.%03d\r\nLoop End: %02d:%02d:%02d.%03d\r\n",
+				tcA.Hours, tcA.Minutes, tcA.Seconds, tcA.Milliseconds,
+				tcB.Hours, tcB.Minutes, tcB.Seconds, tcB.Milliseconds);
+
+			CopyStringToClipboard(this->m_hWnd, exportText);
 		}
 	}
 	else if (nID == ID_PLAY_REPEAT_AB_EXPORT_FFMPEG) {
@@ -21080,7 +21084,7 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 		CString outputFile = L"output.mp4";
 
 		// Try to get the actual file name if available
-		CString curFile = m_wndPlaylistBar.m_pl.GetCurFileName();
+		CString curFile = m_wndPlaylistBar.GetCurFileName();
 		if (!curFile.IsEmpty()) {
 			inputFile = curFile;
 			
@@ -21107,25 +21111,26 @@ void CMainFrame::OnABRepeatExport(UINT nID)
 
 		// Build FFmpeg command
 		if (m_abRepeatPositionAEnabled && m_abRepeatPositionBEnabled) {
+			
 			exportText.Format(
-				L"ffmpeg -i \"%s\" -ss %s -to %s -c copy \"%s\"",
+				L"ffmpeg -i \"%s\" -ss %02d:%02d:%02d.%03d -to %02d:%02d:%02d.%03d -c copy \"%s\"",
 				inputFile.GetString(),
-				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
-				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
+				tcA.Hours, tcA.Minutes, tcA.Seconds, tcA.Milliseconds,
+				tcB.Hours, tcB.Minutes, tcB.Seconds, tcB.Milliseconds,
 				outputFile.GetString()
 			);
 		} else if (m_abRepeatPositionAEnabled) {
 			exportText.Format(
-				L"ffmpeg -i \"%s\" -ss %s -c copy \"%s\"",
+				L"ffmpeg -i \"%s\" -ss %02d:%02d:%02d.%03d -c copy \"%s\"",
 				inputFile.GetString(),
-				ReftimeToString2(m_abRepeatPositionA, false).GetString(),
+				tcA.Hours, tcA.Minutes, tcA.Seconds, tcA.Milliseconds,
 				outputFile.GetString()
 			);
 		} else if (m_abRepeatPositionBEnabled) {
 			exportText.Format(
-				L"ffmpeg -i \"%s\" -to %s -c copy \"%s\"",
+				L"ffmpeg -i \"%s\" -to %02d:%02d:%02d.%03d -c copy \"%s\"",
 				inputFile.GetString(),
-				ReftimeToString2(m_abRepeatPositionB, false).GetString(),
+				tcB.Hours, tcB.Minutes, tcB.Seconds, tcB.Milliseconds,				
 				outputFile.GetString()
 			);
 		}

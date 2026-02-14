@@ -57,6 +57,8 @@ public:
 	void SetStatusMessage(CString str);
 	void SetStatusTimer(CString str);
 	void SetStatusTimer(REFERENCE_TIME rtNow, REFERENCE_TIME rtDur, bool bShowMilliSecs, const GUID& timeFormat);
+	void SetStatusTimer(REFERENCE_TIME rtNow, REFERENCE_TIME rtDur, bool bShowMilliSecs, const GUID& timeFormat,
+						const REFERENCE_TIME* pLoopA, const REFERENCE_TIME* pLoopB);
 
 	CString GetStatusTimer();
 
